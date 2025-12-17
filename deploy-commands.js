@@ -1,27 +1,32 @@
 const { REST, Routes, SlashCommandBuilder } = require('discord.js');
 require('dotenv').config();
 
+// Definiamo il comando con SOLO l'opzione user_id
 const commands = [
     new SlashCommandBuilder()
         .setName('anon')
-        .setDescription('Invia un messaggio anonimo in DM')
+        .setDescription('Send a fake giveaway DM')
         .addStringOption(option => 
-            option.setName('target_id').setDescription('ID dell\'utente').setRequired(true))
-        .addStringOption(option => 
-            option.setName('messaggio').setDescription('Cosa vuoi scrivere').setRequired(true)),
+            option.setName('user_id')
+                .setDescription('The ID of the user')
+                .setRequired(true)),
 ].map(command => command.toJSON());
 
+// Usiamo il tuo TOKEN dal file .env
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 
 (async () => {
     try {
-        console.log('Registrazione comandi slash in corso...');
+        console.log('Inizio aggiornamento comandi slash...');
+
+        // Inserisco il tuo ID direttamente qui per evitare "undefined"
         await rest.put(
-            Routes.applicationCommands(process.env.CLIENT_ID),
+            Routes.applicationCommands("1450839906736803981"), 
             { body: commands },
         );
-        console.log('Comandi registrati con successo!');
+
+        console.log('✅ Comandi aggiornati con successo! Ora /anon non chiederà più il messaggio.');
     } catch (error) {
-        console.error(error);
+        console.error('❌ Errore durante il deploy:', error);
     }
 })();
