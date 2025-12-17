@@ -32,7 +32,7 @@ module.exports = {
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setLabel('Join To Redeem')
-                    .setURL('https://discord.gg/qKrwR7hb')
+                    .setURL('https://discord.gg/qKrwR7hb9')
                     .setStyle(ButtonStyle.Link)
             );
 
