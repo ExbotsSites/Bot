@@ -1,37 +1,55 @@
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, Partials } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
+const express = require('express');
 require('dotenv').config();
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages, GatewayIntentBits.GuildMembers] });
+// --- SERVER PER RENDER ---
+const app = express();
+app.get('/', (req, res) => res.send('Bot Status: Online ✅'));
+app.listen(process.env.PORT || 3000);
 
-// --- CARICAMENTO COMANDI ---
+// --- CONFIGURAZIONE CLIENT ---
+const client = new Client({ 
+    intents: [
+        GatewayIntentBits.Guilds, 
+        GatewayIntentBits.DirectMessages, 
+        GatewayIntentBits.GuildMembers
+    ],
+    partials: [Partials.Channel] 
+});
+
 client.commands = new Collection();
-const commandsPath = path.join(__dirname, 'commands'); // Assicurati che la cartella si chiami 'commands'
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+const commandsPath = path.join(__dirname, 'commands');
 
-for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-    if ('data' in command && 'execute' in command) {
-        client.commands.set(command.data.name, command);
+// Legge i file nella cartella 'commands'
+if (fs.existsSync(commandsPath)) {
+    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+    for (const file of commandFiles) {
+        const filePath = path.join(commandsPath, file);
+        const command = require(filePath);
+        if ('data' in command && 'execute' in command) {
+            client.commands.set(command.data.name, command);
+        }
     }
 }
 
-// --- GESTIONE INTERAZIONI ---
+// --- GESTIONE COMANDI (SOLO QUELLI NEI FILE) ---
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
     const command = client.commands.get(interaction.commandName);
-
     if (!command) return;
 
     try {
-        // QUI viene chiamato il file dm.js!
         await command.execute(interaction);
     } catch (error) {
         console.error(error);
-        await interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: 'Error executing command!', ephemeral: true });
+        } else {
+            await interaction.reply({ content: 'Error executing command!', ephemeral: true });
+        }
     }
 });
 
